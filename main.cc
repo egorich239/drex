@@ -128,13 +128,13 @@ void AnalyzeMethod(const DexScanner& scanner, const EncodedMethod& method, uint3
     if (IsReturn(opcode) || IsThrow(opcode)) {
       if (next_pc < code.instr_size()) edges[next_pc].clear();
     } else if (IsBBranch(opcode)) {
-      PutEdge(current_pc, &edges, &current_block, next_pc);
       PutEdge(current_pc, &edges, &current_block,
               layout<L_22t>(instr)->C(&scanner, offs) + current_pc);
-    } else if (IsUBranch(opcode)) {
       PutEdge(current_pc, &edges, &current_block, next_pc);
+    } else if (IsUBranch(opcode)) {
       PutEdge(current_pc, &edges, &current_block,
               layout<L_21t>(instr)->B(&scanner, offs) + current_pc);
+      PutEdge(current_pc, &edges, &current_block, next_pc);
     } else if (IsGoto(opcode)) {
       int32_t target;
       switch (opcode) {
@@ -190,14 +190,28 @@ void AnalyzeMethod(const DexScanner& scanner, const EncodedMethod& method, uint3
     cout << "}" << endl;
   }
 
-  for (auto& v : edges) {
-    if (v.size() == 1 && v[0] < 0) {
-      v.clear();
-    }
-  }
   DominatorEval eval(edges);
   eval.Compute();
 
+  /*
+  vector<int> java_blocks_stack;
+
+  vector<int> exec_stack{0};
+  while (!exec_stack.empty()) {
+    const int block = exec_stack.back();
+    current_pc = block;
+    if (eval.outbound[block].size() == 2) {
+      bool has_dominated = false;
+      for (int inbound : eval.inbound[block]) {
+        has_dominated |= eval.IsDominated(inbound, block);
+      }
+      if (!has_dominated) {
+        Output(edges, block, "if");
+      }
+    }
+    exec_stack.pop_back();
+  }
+  */
 }
 
 int main() {
