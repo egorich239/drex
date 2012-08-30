@@ -11,6 +11,7 @@ using std::vector;
 namespace egorich {
 namespace rev {
 
+class IDefBase;
 class DexScanner;
 
 struct TypeIdItem {
@@ -56,6 +57,9 @@ class CodeItem {
   CodeItem(const DexScanner* dex, size_t def_offs);
   uint32_t instr_offs() const { return def_offs_ + 16; }
   uint32_t instr_size() const { return insns_size_; }
+  uint8_t opcode(size_t addr) const;
+  size_t opsize(size_t addr) const;
+  const IDefBase* instr(size_t addr) const;
 
  private:
   void Init();

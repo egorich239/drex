@@ -15,6 +15,8 @@
 #include <string>
 #include <vector>
 
+#include "dex_asm.h"
+
 using std::cout;
 using std::cerr;
 using std::endl;
@@ -147,6 +149,18 @@ void CodeItem::Init() {
         [] (const EncodedCatchHandler& lhs, const EncodedCatchHandler& rhs) -> bool { return lhs.offset < rhs.offset; }) - handlers_.begin();
     tries_.push_back({start_addr, insn_count, handler_idx});
   }
+}
+
+uint8_t CodeItem::opcode(size_t addr) const {
+  return dex_->ReadUShort(instr_offs() + 2 * addr) & 0xFF;
+}
+
+size_t CodeItem::opsize(size_t addr) const {
+  return instr(addr)->size(dex_, instr_offs() + 2 * addr);
+}
+
+const IDefBase* CodeItem::instr(size_t addr) const {
+  return iTable[opcode(addr)];
 }
 
 ClassDefItem::ClassDefItem(const DexScanner* dex, size_t def_offs)

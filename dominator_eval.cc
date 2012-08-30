@@ -1,5 +1,11 @@
 #include "dominator_eval.h"
 
+#include <algorithm>
+
+#include "log.h"
+
+using std::sort;
+
 namespace egorich {
 namespace rev {
 
@@ -7,10 +13,11 @@ DominatorEval::DominatorEval(const Edges& outbound)
   : outbound_(outbound),
     inbound_(outbound.size()),
     time_(0),
-    reachable_count_(0),
     semi_(outbound.size(), -1),
     parent_(outbound.size(), -1),
     preorder_(outbound.size(), -1),
+    postorder_(),
+    postorder_index_(outbound_.size()),
     bucket_(outbound.size()),
     ancestor_(outbound.size(), -1),
     label_(outbound.size(), -1),
@@ -26,14 +33,22 @@ DominatorEval::~DominatorEval() {
 
 void DominatorEval::Compute() {
   DFS(0);
+  for (int i = 0; i < postorder_.size(); ++i) {
+    postorder_index_[postorder_[i]] = i;
+  }
   AssignSemi();
   ComputeDom();
   TraverseTree(0);
+  RearrangeTree();
 }
 
 bool DominatorEval::IsDominated(int v, int by) const {
-  return traversal_[by].first < traversal_[v].first 
+  return traversal_[by].first <= traversal_[v].first 
       && traversal_[v].first < traversal_[by].second;
+}
+
+bool DominatorEval::IsBefore(int v, int w) const {
+  return postorder_index_[v] > postorder_index_[w];
 }
 
 void DominatorEval::DFS(Vertex v) {
@@ -48,10 +63,10 @@ void DominatorEval::DFS(Vertex v) {
     }
     inbound_[w].push_back(v);
   }
+  postorder_.push_back(v);
 }
 
 void DominatorEval::AssignSemi() {
-  reachable_count_ = time_;
   while (--time_) {
     const Vertex w = preorder_[time_];
     for (Vertex v : inbound_[w]) {
@@ -72,7 +87,7 @@ void DominatorEval::AssignSemi() {
 
 void DominatorEval::ComputeDom() {
   bucket_.assign(bucket_.size(), vector<Vertex>());
-  while (++time_ < reachable_count_) {
+  while (++time_ < postorder_.size()) {
     const Vertex w = preorder_[time_];
     if (dom_[w] != preorder_[semi_[w]]) {
       dom_[w] = dom_[dom_[w]];
@@ -88,6 +103,14 @@ void DominatorEval::TraverseTree(Vertex v) {
     TraverseTree(w);
   }
   traversal_[v].second = time_++;
+}
+
+void DominatorEval::RearrangeTree() {
+  for (vector<Vertex>& children : bucket_) {
+    sort(children.begin(), children.end(),
+         [this] (Vertex l, Vertex r) -> bool {
+             return this->IsBefore(l, r); });
+  }
 }
 
 void DominatorEval::Link(Vertex v, Vertex w) {
