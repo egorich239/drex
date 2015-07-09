@@ -1,6 +1,6 @@
-message Foo {
+  message Foo {
 
-  // # A very important field.
-  optional int32 baz = 1;
+    // A very important field.
+    optional int32 baz = 1;
 
-}
+  }
