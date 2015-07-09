@@ -3,6 +3,6 @@
 
     // A very important field.
     optional int32 baz = 1;
-    optiomnal bool bar = 2;
+    optional bool bar = 2;
   }
 ```
